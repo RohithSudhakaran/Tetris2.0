@@ -28,7 +28,9 @@ export const SCORING = {
     SINGLE: 40,
     DOUBLE: 100,
     TRIPLE: 300,
-    TETRIS: 1200
+    TETRIS: 1200,
+    SOFT_DROP: 1,
+    HARD_DROP: 2
 };
 
 // Key codes
@@ -39,5 +41,19 @@ export const KEYS = {
     UP: 38,
     SPACE: 32,
     X: 88,
-    Z: 90
+    Z: 90,
+    P: 80,
+    R: 82
+};
+
+// Achievement definitions
+export const ACHIEVEMENTS = {
+    FIRST_LINE: { name: "First Line", description: "Clear your first line", icon: "🎯" },
+    TETRIS_MASTER: { name: "Tetris Master", description: "Clear 4 lines at once", icon: "🏆" },
+    SPEED_DEMON: { name: "Speed Demon", description: "Reach level 5", icon: "⚡" },
+    CENTURY_CLUB: { name: "Century Club", description: "Score 100+ points", icon: "💯" },
+    LINE_MASTER: { name: "Line Master", description: "Clear 25 lines total", icon: "📏" },
+    PERSISTENCE: { name: "Persistence", description: "Play for 2 minutes", icon: "⏰" },
+    COMBO_KING: { name: "Combo King", description: "Clear 3 consecutive Tetrises", icon: "🔥" },
+    MOTION_MASTER: { name: "Motion Master", description: "Use hand gesture controls", icon: "🤚" }
 };

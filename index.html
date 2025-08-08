@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tetris Game</title>
+    <title>Tetris 2.0 - Enhanced Edition with Motion Control</title>
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- MediaPipe Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="game-container">
         <canvas id="tetris"></canvas>
         
         <div class="info-panel">
-            <h3>Game Stats</h3>
+            <h3>🎮 Game Stats</h3>
             
             <div class="stat">
                 <span class="stat-label">Score:</span>
@@ -28,13 +34,30 @@
                 <span class="stat-value" id="lines">0</span>
             </div>
             
+            <div class="next-piece-container">
+                <h4>📋 Next Piece</h4>
+                <canvas id="nextPiece" width="80" height="80"></canvas>
+            </div>
+            
             <div class="controls">
-                <h4>Controls</h4>
+                <h4>⌨️ Keyboard Controls</h4>
                 ← → Move<br>
                 ↓ Soft Drop<br>
                 ↑ / X Rotate CW<br>
                 Z Rotate CCW<br>
-                Space Hard Drop
+                Space Hard Drop<br>
+                P Pause Game<br>
+                R Restart Game
+            </div>
+            
+            <div class="motion-controls">
+                <h4>🤚 Motion Controls</h4>
+                <small>Enable camera to use hand gestures!</small>
+            </div>
+            
+            <div class="achievements" id="achievements">
+                <h4>🏆 Achievements</h4>
+                <div id="achievement-list"></div>
             </div>
         </div>
     </div>
