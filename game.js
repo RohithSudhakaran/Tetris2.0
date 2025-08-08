@@ -5,8 +5,8 @@ import { Player } from './player.js';
 import { GameLogic } from './gameLogic.js';
 import { Renderer } from './renderer.js';
 import { InputController } from './input.js';
-import { AchievementManager } from './achievements.js';
 import { HandGestureController } from './handGestureController.js';
+import { LeaderboardManager } from './leaderboard.js';
 
 class TetrisGame {
     constructor() {
@@ -16,7 +16,7 @@ class TetrisGame {
         this.gameLogic = new GameLogic();
         this.renderer = new Renderer(this.canvas);
         this.inputController = new InputController(this.player, this.gameLogic, this.arena, this.renderer);
-        this.achievementManager = new AchievementManager();
+        this.leaderboardManager = new LeaderboardManager();
         
         // Motion control integration
         this.gestureController = null;
@@ -25,15 +25,33 @@ class TetrisGame {
         this.nextPiece = null;
         this.dropCounter = 0;
         this.lastTime = 0;
+        this.gameStarted = false;
         
-        this.init();
+        this.initializeNameEntry();
+    }
+
+    initializeNameEntry() {
+        // Show name entry modal first
+        this.leaderboardManager.showNameEntry();
+        
+        // Initialize leaderboard display
+        this.leaderboardManager.updateDisplay();
+        
+        // Start the update loop immediately (but game logic waits for gameStarted)
+        this.update();
+        this.addVersionInfo();
+        
+        // Listen for game start event
+        document.addEventListener('gameStart', (event) => {
+            this.gameStarted = true;
+            this.inputController.setGameStarted(true); // Enable keyboard input
+            this.init();
+        });
     }
 
     init() {
         this.generateNextPiece();
         this.resetPlayer();
-        this.update();
-        this.addVersionInfo();
         this.initializeGestureControl();
     }
 
@@ -87,13 +105,38 @@ class TetrisGame {
     handleGameOver() {
         this.gameLogic.gameOver();
         const stats = this.gameLogic.getStats();
-        this.renderer.showGameOver(stats.score, stats.level, stats.lines);
-        this.achievementManager.checkAchievements(this.gameLogic);
         
-        // Add achievement for using motion control
-        if (this.gestureController && this.gestureController.isEnabled) {
-            this.achievementManager.unlockAchievement('MOTION_MASTER');
+        // Check for leaderboard entry
+        const rank = this.leaderboardManager.addScore(stats.score);
+        
+        // Show game over with leaderboard info
+        this.showGameOverWithLeaderboard(stats, rank);
+        
+    }
+
+    showGameOverWithLeaderboard(stats, rank) {
+        // Create custom game over screen with leaderboard info
+        const gameOverDiv = document.createElement('div');
+        gameOverDiv.className = 'game-over';
+        
+        let rankMessage = '';
+        if (rank) {
+            const rankText = rank === 1 ? '1st' : rank === 2 ? '2nd' : '3rd';
+            rankMessage = `<div style="color: #FFD700; font-size: 18px; margin: 10px 0;">🏆 NEW ${rankText} PLACE RECORD! 🏆</div>`;
         }
+        
+        gameOverDiv.innerHTML = `
+            <h2>Game Over</h2>
+            <div style="color: #0DC2FF; font-size: 16px;">Player: ${this.leaderboardManager.getCurrentPlayerName()}</div>
+            ${rankMessage}
+            <p>Score: ${stats.score.toLocaleString()}</p>
+            <p>Level: ${stats.level}</p>
+            <p>Lines: ${stats.lines}</p>
+            <button onclick="location.reload()">Play Again</button>
+            <button onclick="this.parentElement.remove()">Close</button>
+        `;
+        
+        document.body.appendChild(gameOverDiv);
     }
 
     playerDrop() {
@@ -103,14 +146,14 @@ class TetrisGame {
         if (landed) {
             merge(this.arena, this.player);
             const linesCleared = this.gameLogic.clearLines(this.arena);
-            this.achievementManager.checkAchievements(this.gameLogic, linesCleared);
             this.resetPlayer();
         }
         this.dropCounter = 0;
     }
 
     update(time = 0) {
-        if (!this.gameLogic.isPaused && !this.gameLogic.isGameOver) {
+        // Only update game logic if game has started
+        if (this.gameStarted && !this.gameLogic.isPaused && !this.gameLogic.isGameOver) {
             const deltaTime = time - this.lastTime;
             this.lastTime = time;
 
@@ -119,11 +162,13 @@ class TetrisGame {
                 this.playerDrop();
             }
 
-            this.achievementManager.checkAchievements(this.gameLogic);
         }
 
-        this.renderer.draw(this.arena, this.player, this.nextPiece);
-        this.renderer.updateUI(this.gameLogic.getStats());
+        // Always render, but only show game elements if started
+        if (this.gameStarted) {
+            this.renderer.draw(this.arena, this.player, this.nextPiece);
+            this.renderer.updateUI(this.gameLogic.getStats());
+        }
         
         requestAnimationFrame((time) => this.update(time));
     }

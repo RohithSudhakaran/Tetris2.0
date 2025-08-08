@@ -7,17 +7,34 @@ export class InputController {
         this.gameLogic = gameLogic;
         this.arena = arena;
         this.renderer = renderer;
+        this.gameStarted = false; // Track if game has started
         this.setupEventListeners();
+    }
+
+    // Method to enable input when game starts
+    setGameStarted(started) {
+        this.gameStarted = started;
     }
 
     setupEventListeners() {
         document.addEventListener('keydown', (event) => {
+            // Don't capture events if modal is open (name entry)
+            const modal = document.getElementById('nameEntryModal');
+            if (modal && modal.style.display === 'flex') {
+                return; // Let the modal handle the input
+            }
+            
             event.preventDefault(); // Prevent page scrolling
             this.handleKeyPress(event.keyCode);
         });
     }
 
     handleKeyPress(keyCode) {
+        // Don't process any game inputs if game hasn't started
+        if (!this.gameStarted) {
+            return;
+        }
+        
         // Handle pause/restart even when paused
         if (keyCode === KEYS.P) {
             const isPaused = this.gameLogic.togglePause();

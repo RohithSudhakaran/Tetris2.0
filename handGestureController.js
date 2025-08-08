@@ -18,7 +18,7 @@ class HandGestureController {
             isActive: false,
             direction: null, // 'left' or 'right'
             interval: null,
-            moveSpeed: 150 // ms between continuous moves
+            moveSpeed: 350 // ms between continuous moves (slower for easier control)
         }
         
         // Camera and MediaPipe setup
@@ -166,8 +166,10 @@ class HandGestureController {
             return 'FIVE_FINGERS'; // All fingers extended - Move Right
         } else if (extendedCount === 4 && !fingers.thumb) {
             return 'FOUR_FINGERS'; // Four fingers (no thumb) - Move Left
+        } else if (extendedCount === 1 && fingers.index && !fingers.thumb && !fingers.middle && !fingers.ring && !fingers.pinky) {
+            return 'ONE_FINGER'; // Only index finger - Rotate
         } else if (extendedCount === 0) {
-            return 'CLOSED_FIST'; // All fingers closed - Rotate
+            return 'CLOSED_FIST'; // All fingers closed - No function
         } else if (fingers.thumb && fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky) {
             return 'THUMB_INDEX'; // Thumb and index finger - Drop
         } else if (!fingers.thumb && fingers.index && fingers.middle && !fingers.ring && !fingers.pinky) {
@@ -292,8 +294,11 @@ class HandGestureController {
         this.showGestureFeedback(gesture);
 
         switch (gesture) {
-            case 'CLOSED_FIST':
+            case 'ONE_FINGER':
                 this.gameController.player.rotate(1, this.gameController.arena);
+                break;
+            case 'CLOSED_FIST':
+                // No function - do nothing
                 break;
             case 'THUMB_INDEX':
                 this.gameController.player.drop(this.gameController.arena);
@@ -361,10 +366,11 @@ class HandGestureController {
         `;
         
         const gestureNames = {
-            'FIVE_FINGERS': '�️ Move Right',
+            'FIVE_FINGERS': '🖐️ Move Right',
             'FOUR_FINGERS': '🤚 Move Left', 
-            'CLOSED_FIST': '✊ Rotate',
-            'THUMB_INDEX': '� Drop',
+            'ONE_FINGER': '☝️ Rotate',
+            'CLOSED_FIST': '✊ No Function',
+            'THUMB_INDEX': '🤏 Drop',
             'PEACE': '✌️ Hard Drop',
             'OK_SIGN': '👌 Pause'
         };
@@ -382,34 +388,54 @@ class HandGestureController {
             position: fixed;
             top: 270px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 20px;
+            border-radius: 15px;
             z-index: 99;
             font-size: 12px;
+            min-width: 280px;
+            border: 2px solid #0DC2FF;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         `;
         
         controlPanel.innerHTML = `
             <button id="toggleGestures" style="
-                background: ${this.isEnabled ? '#00FF88' : '#FF4444'};
+                background: ${this.isEnabled ? 'linear-gradient(145deg, #00FF88, #00CC66)' : 'linear-gradient(145deg, #FF4444, #CC2222)'};
                 color: white;
                 border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
+                padding: 15px 20px;
+                border-radius: 12px;
                 cursor: pointer;
-                margin-bottom: 10px;
+                margin-bottom: 15px;
                 width: 100%;
-            ">
-                ${this.isEnabled ? 'Disable' : 'Enable'} Gestures
+                font-size: 16px;
+                font-weight: bold;
+                box-shadow: 0 4px 15px rgba(${this.isEnabled ? '0, 255, 136' : '255, 68, 68'}, 0.3);
+                transition: all 0.3s ease;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(${this.isEnabled ? '0, 255, 136' : '255, 68, 68'}, 0.4)';" 
+               onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='0 4px 15px rgba(${this.isEnabled ? '0, 255, 136' : '255, 68, 68'}, 0.3)';">
+                ${this.isEnabled ? '🤚 DISABLE GESTURES' : '🤚 ENABLE GESTURES'}
             </button>
-            <div style="font-size: 10px; line-height: 1.4;">
-                �️ Five Fingers = Right<br>
-                🤚 Four Fingers = Left<br>
-                ✊ Closed Fist = Rotate<br>
-                � Thumb+Index = Drop<br>
-                ✌️ Peace = Hard Drop<br>
-                👌 OK = Pause
+            <div style="
+                font-size: 14px; 
+                line-height: 2.0; 
+                background: rgba(13, 194, 255, 0.1);
+                padding: 15px;
+                border-radius: 10px;
+                border: 2px solid rgba(13, 194, 255, 0.3);
+                margin-top: 10px;
+            ">
+                <div style="color: #0DC2FF; font-weight: bold; margin-bottom: 10px; font-size: 16px;">🎮 GESTURE CONTROLS</div>
+                <div style="color: #FFF;">🖐️ <strong>Five Fingers</strong> = Move Right</div>
+                <div style="color: #FFF;">🤚 <strong>Four Fingers</strong> = Move Left</div>
+                <div style="color: #FFF;">☝️ <strong>One Finger</strong> = Rotate</div>
+                <div style="color: #888;">✊ <strong>Closed Fist</strong> = No Function</div>
+                <div style="color: #FFF;">🤏 <strong>Thumb+Index</strong> = Drop</div>
+                <div style="color: #FFF;">✌️ <strong>Peace Sign</strong> = Hard Drop</div>
+                <div style="color: #FFF;">👌 <strong>OK Sign</strong> = Pause</div>
             </div>
         `;
         
@@ -424,8 +450,15 @@ class HandGestureController {
     toggleGestureControl() {
         this.isEnabled = !this.isEnabled;
         const button = document.getElementById('toggleGestures');
-        button.textContent = this.isEnabled ? 'Disable Gestures' : 'Enable Gestures';
-        button.style.background = this.isEnabled ? '#00FF88' : '#FF4444';
+        
+        // Update button text and styling
+        button.innerHTML = this.isEnabled ? '🤚 DISABLE GESTURES' : '🤚 ENABLE GESTURES';
+        button.style.background = this.isEnabled ? 
+            'linear-gradient(145deg, #00FF88, #00CC66)' : 
+            'linear-gradient(145deg, #FF4444, #CC2222)';
+        button.style.boxShadow = this.isEnabled ?
+            '0 4px 15px rgba(0, 255, 136, 0.3)' :
+            '0 4px 15px rgba(255, 68, 68, 0.3)';
         
         if (this.isEnabled) {
             this.camera.start();
